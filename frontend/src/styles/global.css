@@ -70,3 +70,15 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .analysis-chart { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 12px 0; }
 .analysis-bar { flex: 1; border-radius: 4px 4px 0 0; background: var(--brand); min-width: 24px; position: relative; transition: height 0.4s; }
 .analysis-bar span { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--muted); white-space: nowrap; }
+/* 重采输入包面板 */
+.retry-panel { margin-top: 20px; border-top: 2px solid var(--border); padding-top: 8px; }
+.retry-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 10px 0; }
+.retry-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.retry-form input, .retry-form select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; min-width: 160px; }
+.retry-block { margin: 16px 0; }
+.retry-block h3 { font-size: 14px; margin: 0 0 8px; }
+.retry-hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
+.retry-message { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+.retry-stats { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.retry-blocked td { color: var(--muted); text-decoration: line-through; }
+.retry-receive { background: #f8fafc; border: 1px dashed var(--border); border-radius: 8px; padding: 12px; }

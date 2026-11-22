@@ -77,5 +77,45 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 失败采集重采输入包
+
+交班时可以把一次运行里的原始失败采集记录导出成离线 zip，交给另一值班人核查，
+之后从恢复入口上传同一文件重新导入。相关实现：
+
+- `backend/app/services/retry.py`：失败明细范围判定、出库、接收、领取和补采结果。
+- `backend/app/routers/retry.py`：`/api/retry/*` 接口（不占用通用模块表）。
+- `frontend/src/views/RetryPackagePanel.vue`：错误恢复页下方的重采输入包面板。
+
+要点：
+
+- 导出只走 `已启用` 的导出配置通道，登记原采集批次、包范围与取得时间；
+  关联体现在 `GET /api/retry/export-linkage` 和导出通道的 `domain_snapshot` 里。
+- 存量运行缺少 `页面地址`、`采集批次id`、`可重采` 等可选字段时，
+  仍按错误类型与重试边界判定条件重采页面（`GET /api/retry/runs/{id}/scope`）。
+- 接收包按 `内容指纹` 幂等：重复接收同一包、或某页已有补采结果时，
+  不会为该页新建执行资格；回执记录原包范围与当前可执行范围的差异。
+- 同一运行同一页的补采结果只保留一份，可在 `GET /api/retry/results` 核对。
+- 页面快照“标记存档”如果对应某个待补采页面，会自动回写补采结果并停止发资格。
+
+典型流程：
+
+```bash
+# 1. 出包（也可用 GET /api/retry/runs/{run_id}/export?... 直接下载）
+curl -X POST http://127.0.0.1:8000/api/retry/packages \
+  -H 'Content-Type: application/json' \
+  -d '{"run_id":1,"channel_id":3,"actor":"交班人","shift":"白班"}'
+curl -o pkg.zip http://127.0.0.1:8000/api/retry/packages/1/download
+
+# 2. 另一班在别处补回其中两页后，交班人上传旧包
+curl -X POST http://127.0.0.1:8000/api/retry/receive -F file=@pkg.zip
+
+# 3. 查看剩余工作与已补采结果
+curl 'http://127.0.0.1:8000/api/retry/workbench?run_id=1'
+```
+
+前端在“错误恢复”页底部提供同样的操作：导出、下载、上传接收、领取与登记补采结果。
+
+## 约定
+
 领域：数据工程
 子方向：数据采集、爬虫与RPA

@@ -90,12 +90,15 @@
       <span>共 {{ total }} 条{{ meta.name }}记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <RetryPackagePanel v-if="meta.key === 'error_recover'" :module-key="meta.key" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import RetryPackagePanel from '@/views/RetryPackagePanel.vue'
 import {
   createEntry,
   downloadEntries,

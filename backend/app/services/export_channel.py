@@ -41,6 +41,23 @@ class ExportChannelService(BaseModuleService):
             raise ValueError(f"不支持的输出格式: {fmt}")
         return path
 
+    def list_retry_packages(self) -> list[dict[str, Any]]:
+        """导出通道视角的重采输入包交付记录：每批关联原批次、范围和取得时间。"""
+        return [
+            {
+                "通道编号": row.get("通道编号", ""),
+                "包编号": row.get("包编号", ""),
+                "来源运行id": row.get("来源运行id"),
+                "原采集批次id": row.get("原采集批次id"),
+                "原采集批次编号": row.get("原采集批次编号", ""),
+                "包范围": row.get("包范围", []),
+                "页面数": row.get("页面数", 0),
+                "取得时间": row.get("取得时间", ""),
+                "出库状态": row.get("status", ""),
+            }
+            for row in store.rows("_retry_package")
+        ]
+
     def domain_snapshot(self) -> dict[str, Any]:
         base = super().domain_snapshot()
         channels = store.rows(self.MODULE)
@@ -51,4 +68,12 @@ class ExportChannelService(BaseModuleService):
         # 内容缓存关联
         caches = store.rows("content_cache")
         base["linked_caches"] = len([c for c in caches if c.get("status") == "已生效"])
+        # 逐批交付的重采输入包：关联原采集批次、包范围、取得时间
+        packages = store.rows("_retry_package")
+        base["retry_packages"] = len(packages)
+        base["retry_package_batches"] = len({
+            p.get("原采集批次id") for p in packages if p.get("原采集批次id") is not None})
+        base["retry_package_pages"] = sum(int(p.get("页面数") or 0) for p in packages)
+        base["retry_package_latest"] = (
+            packages[-1].get("取得时间") if packages else "")
         return base

@@ -5,6 +5,7 @@ from typing import Any
 
 from app.store import store
 from app.services.base import BaseModuleService, register_hook
+from app.services import retry
 from app import persistence as persist
 
 
@@ -49,6 +50,15 @@ class ErrorRecoverService(BaseModuleService):
     ACTION_RULES = {"发起重试": "重试中", "确认恢复": "已恢复", "标记放弃": "已放弃"}
     NEGATIVE_ACTIONS = []
 
+    def get_workbench(self, run_id: int | None = None) -> dict[str, Any]:
+        """恢复入口视图：剩余工作、已补采结果、回执和重采输入包。"""
+        return retry.workbench(run_id)
+
+    def receive_retry_package(self, raw: bytes, filename: str = "",
+                              actor: str = "", shift: str = "") -> dict[str, Any]:
+        """从离线压缩包重新接收重采输入包，核对范围并留差异。"""
+        return retry.receive_package(raw=raw, filename=filename, actor=actor, shift=shift)
+
     def domain_snapshot(self) -> dict[str, Any]:
         base = super().domain_snapshot()
         tasks = store.rows(self.MODULE)
@@ -62,4 +72,9 @@ class ErrorRecoverService(BaseModuleService):
         base["recovery_runs"] = len(recovery_runs)
         base["retry_total"] = sum(
             int(str(r.get("已重试次数") or "0")) for r in tasks if str(r.get("已重试次数") or "").isdigit())
+        # 重采输入包：出库包数、接收回执、剩余工作和已补采页
+        base["retry_packages"] = len(store.rows(retry.PACKAGE_TABLE))
+        base["retry_receipts"] = len(store.rows(retry.RECEIPT_TABLE))
+        base["retry_remaining"] = len(retry.workbench()["剩余工作"])
+        base["retry_completed"] = len(store.rows(retry.COMPLETION_TABLE))
         return base
